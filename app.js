@@ -6,12 +6,16 @@ const ExpressError = require("./helpers/expressError");
 
 const morgan = require("morgan");
 
+const cRoutes = require("./routes/companies")
+
 const app = express();
 
 app.use(express.json());
 
 // add logging system
 app.use(morgan("tiny"));
+
+app.use("/companies", cRoutes)
 
 /** 404 handler */
 
