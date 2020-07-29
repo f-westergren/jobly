@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS jobs;
 DROP TABLE IF EXISTS companies;
+DROP TABLE IF EXISTS users;
 
 CREATE TABLE companies (
   handle TEXT PRIMARY KEY,
@@ -18,6 +19,16 @@ CREATE TABLE jobs (
   date_posted TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE users (
+  username TEXT PRIMARY KEY,
+  password TEXT NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  photo_url TEXT,
+  is_admin BOOLEAN DEFAULT FALSE
+);
+
 INSERT INTO companies 
   (handle, name, num_employees, description) 
 VALUES 
@@ -32,3 +43,9 @@ VALUES
   ('Software Engineer', 80000, 0, 'ibm'),
   ('Full Stack Developer', 100000, 0.2, 'rose_rocket'),
   ('Cashier', 20000, 0, 'mcd');
+
+  INSERT INTO users
+    (username, password, first_name, last_name, email, photo_url)
+  VALUES
+    ('folke', 'folke1', 'Folke', 'Filbyte', 'folke@gmail.com', 'www.pic.com'),
+    ('linda', 'linda1', 'Linda', 'Boll', 'linda@gmail.com', 'www.pic.com');
