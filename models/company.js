@@ -15,14 +15,14 @@ class Company {
 
   // Find all companies, optional search parameters: search query, min_employees, max_employees
   // Default values set in case parameters are not passed to avoid lots of logic.
-  static async findAll(search='', min_employees=0, max_employees=1000000) {
+  static async findAll(search='', min_employees=0, max_employees=999999) {
     // TODO: FIX search
     if (min_employees > max_employees) {
       throw new ExpressError('Incorrect parameters', 400)
     }
 
     const result = await db.query(
-      `SELECT name, handle 
+      `SELECT * 
       FROM companies
       WHERE name ILIKE '${search}%'
       AND num_employees > $1 
@@ -30,8 +30,7 @@ class Company {
       ORDER BY name
       `, [min_employees, max_employees]
     )
-    
-    return result.rows.map(c => new Company(c))
+    return result.rows.map(c => new Company({ handle: c.handle, name: c.name }))
   }
 
   // Add new company
@@ -53,7 +52,7 @@ class Company {
       `SELECT * FROM companies WHERE handle=$1`, [handle]
     )
     if (result.rows.length === 0) {
-      throw new ExpressError(`Couldn't find company with handle ${handle}`, 400)
+      throw new ExpressError(`Couldn't find company with handle ${handle}`, 404)
     }
     return new Company(result.rows[0])
   }
@@ -63,7 +62,7 @@ class Company {
     const queryObj = sqlForPartialUpdate('companies', items, 'handle', handle)
     const result = await db.query(queryObj.query, queryObj.values)
     if (result.rows.length === 0) {
-      throw new ExpressError(`Couldn't find company with handle ${handle}`, 400)
+      throw new ExpressError(`Couldn't find company with handle ${handle}`, 404)
     }
     return new Company(result.rows[0])
   }
