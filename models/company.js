@@ -24,11 +24,11 @@ class Company {
     const result = await db.query(
       `SELECT * 
       FROM companies
-      WHERE name ILIKE '${search}%'
-      AND num_employees > $1 
-      AND num_employees < $2
+      WHERE name ILIKE $1
+      AND num_employees > $2 
+      AND num_employees < $3
       ORDER BY name
-      `, [min_employees, max_employees]
+      `, [`%${search}%`, min_employees, max_employees] // Add % % aroud search to make string match parts of company name
     )
     return result.rows.map(c => new Company({ handle: c.handle, name: c.name }))
   }
@@ -51,10 +51,16 @@ class Company {
     const result = await db.query(
       `SELECT * FROM companies WHERE handle=$1`, [handle]
     )
+    const jobs = await db.query(
+      `SELECT * FROM jobs WHERE company_handle=$1`, [handle]
+    )
     if (result.rows.length === 0) {
       throw new ExpressError(`Couldn't find company with handle ${handle}`, 404)
     }
-    return new Company(result.rows[0])
+    const company = new Company(result.rows[0])
+    company.jobs = jobs.rows
+
+    return company
   }
 
   // Update company.
