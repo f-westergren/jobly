@@ -57,7 +57,7 @@ class Job {
 
   // Update job.
   static async update(id, items) {
-    const queryObj = sqlForPartialUpdate('jobs', items, 'id', id)
+    const queryObj = sqlForPartialUpdate('jobs', items, 'id', id, false)
     const result = await db.query(queryObj.query, queryObj.values)
     if (result.rows.length === 0) {
       throw new ExpressError(`Couldn't find job with id ${id}`, 404)
