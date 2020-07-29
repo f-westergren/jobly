@@ -2,8 +2,6 @@ const request = require('supertest');
 const app = require('../../app');
 const db = require('../../db')
 
-let testCompany;
-
 beforeEach(async () => {
   let result = await db.query(
     `INSERT INTO companies (handle, name, num_employees, description, logo_url)
@@ -61,10 +59,10 @@ describe('POST /companies', () => {
   test('add a new company', async () => {
     const testly = {
       handle: 'testlify', 
-      name: 'Testlify', 
+      name: 'Testlify',
       num_employees: 123, 
       description: 'Testing the test', 
-      logo_url: 'www.testly.com'
+      logo_url: 'www.testly.com',
     }
     const res = await request(app).post('/companies').send(testly)
     expect(res.statusCode).toBe(200)
@@ -72,7 +70,7 @@ describe('POST /companies', () => {
 
     // Make sure company was created
     const getCompanyRes = await request(app).get(`/companies/${testly.handle}`)
-    expect(getCompanyRes.body.company).toEqual(testly)
+    expect(getCompanyRes.body.company).toHaveProperty('handle', 'testlify')
   })
 
   test('returns 400 with invalid input', async () => {
@@ -106,7 +104,7 @@ describe('GET /companies/:handle', () => {
   test('gets a single company', async () => {
     const res = await request(app).get(`/companies/${testCompany4.handle}`)
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ company: testCompany4 })
+    expect(res.body.company).toHaveProperty('handle', testCompany4.handle)
   })
   test('returns 404 for invalid handle ', async () => {
     const res = await request(app).get('/companies/invalidHandle')
@@ -133,7 +131,7 @@ describe('PATCH /companies/:handle', () => {
 
     // Check updated company data
     const getCompanyRes = await request(app).get(`/companies/${testCompany.handle}`)
-    expect(getCompanyRes.body.company).toEqual(updateData)
+    expect(getCompanyRes.body.company).toHaveProperty('handle', testCompany.handle)
   })
 
   test('returns 404 for invalid handle ', async () => {
