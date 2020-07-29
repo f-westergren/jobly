@@ -8,7 +8,7 @@ const checkUserSchema = require('../middleware/userSchema')
 router.get('/', async (req, res, next) => {
   try {
     const users = await User.findAll()
-    return res.json({ Users: users })
+    return res.json({ users: users })
   } catch (error) {
     return next(error)
   }

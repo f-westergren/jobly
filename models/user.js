@@ -39,7 +39,10 @@ class User {
     if (result.rows.length === 0) {
       throw new ExpressError("Couldn't add user", 400)
     }
-    return new User(result.rows[0])
+    let user = new User(result.rows[0])
+    user.password = hashedPassword
+
+    return user
   }
 
   // Find one user by username.
