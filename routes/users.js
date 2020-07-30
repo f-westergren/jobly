@@ -2,6 +2,9 @@ const express = require('express');
 const User = require('../models/user')
 const router = new express.Router()
 const checkUserSchema = require('../middleware/userSchema')
+const ExpressError = require("../helpers/expressError");
+const login = require('../models/auth')
+const { ensureLoggedIn, ensureAdmin } = require('../middleware/authenticate')
 
 
 /** Returns the username, first_name, last_name and email of the user objects. */
@@ -14,11 +17,12 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-/** Create a new user and return {user: userData}. */
+/** Create a new user and return JWT with username and is_admin {token: token}. */
 router.post('/', checkUserSchema, async (req, res, next) => {
   try {
-    const userData = await User.add(req.body)
-    return res.send({ user: userData })
+    await User.add(req.body)
+    const token = await login(req.body.username, req.body.password)
+    return res.send({ token: token })
   } catch (error) {
     return next(error)
   }
@@ -36,7 +40,11 @@ router.get('/:username', async (req, res, next) => {
 })
 
 /** Update an existing user and return the updated user details. {job: updatedData} */
-router.patch('/:username', checkUserSchema, async (req, res, next) => {
+router.patch('/:username', ensureLoggedIn, checkUserSchema, async (req, res, next) => {
+  if (req.user.username !== req.params.username) {
+    const error = new ExpressError('Unathorized', 401)
+    return next(error);
+  }
   try {
     let userData = await User.update(req.params.username, req.body)
 
@@ -48,6 +56,10 @@ router.patch('/:username', checkUserSchema, async (req, res, next) => {
 
 /** Delete an existing job and return a message. {message: "Job deleted"} */
 router.delete('/:username', async (req, res, next) => {
+  if (req.user.username !== req.params.username) {
+    const error = new ExpressError('Unathorized', 401)
+    return next(error);
+  }
   try {
     let user = await User.findOne(req.params.username)
     await user.remove();

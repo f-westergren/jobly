@@ -13,7 +13,7 @@ class User {
     this.last_name = last_name;
     this.email = email;
     this.photo_url = photo_url;
-    this.is_admin - is_admin;
+    this.is_admin = is_admin;
   }
 
   // Find all users

@@ -2,6 +2,7 @@ const express = require('express');
 const Job = require('../models/job')
 const router = new express.Router()
 const checkJobSchema = require('../middleware/jobSchema')
+const { ensureLoggedIn, ensureAdmin } = require('../middleware/authenticate')
 
 /** GET /, returns name and handle for all job objects.
  * Ordered by most recently posted jobs
@@ -14,7 +15,7 @@ const checkJobSchema = require('../middleware/jobSchema')
  * 
  */
 
-router.get('/', async (req, res, next) => {
+router.get('/', ensureLoggedIn, async (req, res, next) => {
   try {
     const {search, min_salary, min_equity} = req.body;
 
@@ -26,7 +27,7 @@ router.get('/', async (req, res, next) => {
 })
 
 /** Create a new job and return {job: jobData}. */
-router.post('/', checkJobSchema, async (req, res, next) => {
+router.post('/', ensureAdmin, checkJobSchema, async (req, res, next) => {
   try {
     const jobData = await Job.add(req.body)
     return res.send({ job: jobData })
@@ -36,7 +37,7 @@ router.post('/', checkJobSchema, async (req, res, next) => {
 })
 
 /** Return a single job by its id. {job: jobData}. */
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', ensureLoggedIn, async (req, res, next) => {
   try {
     const jobData = await Job.findOne(req.params.id)
 
@@ -47,7 +48,7 @@ router.get('/:id', async (req, res, next) => {
 })
 
 /** Update an existing job and return the updated job. {job: updatedData} */
-router.patch('/:id', checkJobSchema, async (req, res, next) => {
+router.patch('/:id', ensureAdmin, checkJobSchema, async (req, res, next) => {
   try {
     let jobData = await Job.update(req.params.id, req.body)
 
@@ -58,7 +59,7 @@ router.patch('/:id', checkJobSchema, async (req, res, next) => {
 })
 
 /** Delete an existing job and return a message. {message: "Job deleted"} */
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', ensureAdmin, async (req, res, next) => {
   try {
     let job = await Job.findOne(req.params.id)
     await job.remove();

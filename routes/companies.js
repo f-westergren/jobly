@@ -1,8 +1,8 @@
 const express = require('express');
-const ExpressError = require('../helpers/expressError');
 const Company = require('../models/company')
 const router = new express.Router()
 const checkCompanySchema = require('../middleware/companySchema')
+const { ensureLoggedIn, ensureAdmin } = require('../middleware/authenticate')
 
 /** GET /, returns name and handle for all company objects.
  * The following query strings are accepted:
@@ -14,7 +14,7 @@ const checkCompanySchema = require('../middleware/companySchema')
  * 
  */
 
-router.get('/', async (req, res, next) => {
+router.get('/', ensureLoggedIn, async (req, res, next) => {
   try {
     const {search, min_employees, max_employees} = req.body;
 
@@ -26,7 +26,7 @@ router.get('/', async (req, res, next) => {
 })
 
 /** Create a new company and return {company: companyData}. */
-router.post('/', checkCompanySchema, async (req, res, next) => {
+router.post('/', ensureAdmin, checkCompanySchema, async (req, res, next) => {
   try {
     const {handle, name, num_employees, description, logo_url } = req.body
     const company = await Company.add(handle, name, num_employees, description, logo_url)
@@ -38,7 +38,7 @@ router.post('/', checkCompanySchema, async (req, res, next) => {
 })
 
 /** Return a single company by its handle. {company: companyData}. */
-router.get('/:handle', async (req, res, next) => {
+router.get('/:handle', ensureLoggedIn, async (req, res, next) => {
   try {
     const company = await Company.findOne(req.params.handle)
 
@@ -49,7 +49,7 @@ router.get('/:handle', async (req, res, next) => {
 })
 
 /** Update an existing company and return the updated company. {company: companyData} */
-router.patch('/:handle', checkCompanySchema, async (req, res, next) => {
+router.patch('/:handle', ensureAdmin, checkCompanySchema, async (req, res, next) => {
   try {
     let company = await Company.update(req.params.handle, req.body)
 
@@ -59,7 +59,7 @@ router.patch('/:handle', checkCompanySchema, async (req, res, next) => {
   }
 })
 
-router.delete('/:handle', async (req, res, next) => {
+router.delete('/:handle', ensureAdmin, async (req, res, next) => {
   try {
     let company = await Company.findOne(req.params.handle)
     await company.remove();
