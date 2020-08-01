@@ -1,10 +1,12 @@
 const express = require('express');
 const User = require('../models/user')
 const router = new express.Router()
-const checkUserSchema = require('../middleware/userSchema')
+const { validate } = require('jsonschema');
+const userNew = require('../schemas/userNew.json');
+const userUpdate = require('../schemas/userUpdate.json');
 const ExpressError = require("../helpers/expressError");
 const login = require('../models/auth')
-const { ensureLoggedIn, ensureAdmin } = require('../middleware/authenticate')
+const { ensureSameUser } = require('../middleware/authenticate')
 
 
 /** Returns the username, first_name, last_name and email of the user objects. */
@@ -18,8 +20,15 @@ router.get('/', async (req, res, next) => {
 })
 
 /** Create a new user and return JWT with username and is_admin {token: token}. */
-router.post('/', checkUserSchema, async (req, res, next) => {
+router.post('/', async (req, res, next) => {
   try {
+    // Schema validation
+    const validation = validate(req.body, userNew)
+    if (!validation.valid) {
+      // pass validation errors to error handler
+      let error = new ExpressError(validation.errors.map(error => error.stack), 400)
+      return next(error)
+    }
     await User.add(req.body)
     const token = await login(req.body.username, req.body.password)
     return res.send({ token: token })
@@ -40,12 +49,15 @@ router.get('/:username', async (req, res, next) => {
 })
 
 /** Update an existing user and return the updated user details. {job: updatedData} */
-router.patch('/:username', ensureLoggedIn, checkUserSchema, async (req, res, next) => {
-  if (req.user.username !== req.params.username) {
-    const error = new ExpressError('Unathorized', 401)
-    return next(error);
-  }
+router.patch('/:username', ensureSameUser, async (req, res, next) => {
   try {
+    // Schema validation
+    const validation = validate(req.body, userUpdate)
+    if (!validation.valid) {
+      // pass validation errors to error handler
+      let error = new ExpressError(validation.errors.map(error => error.stack), 400)
+      return next(error)
+    }
     let userData = await User.update(req.params.username, req.body)
 
     return res.send({ user: userData })
@@ -55,11 +67,7 @@ router.patch('/:username', ensureLoggedIn, checkUserSchema, async (req, res, nex
 })
 
 /** Delete an existing job and return a message. {message: "Job deleted"} */
-router.delete('/:username', async (req, res, next) => {
-  if (req.user.username !== req.params.username) {
-    const error = new ExpressError('Unathorized', 401)
-    return next(error);
-  }
+router.delete('/:username', ensureSameUser, async (req, res, next) => {
   try {
     let user = await User.findOne(req.params.username)
     await user.remove();

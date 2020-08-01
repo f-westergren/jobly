@@ -34,4 +34,13 @@ const ensureAdmin = (req, res, next) => {
   }
 }
 
-module.exports = { authenticateJWT, ensureLoggedIn, ensureAdmin }
+const ensureSameUser = (req, res, next) => {
+  if (!req.user || req.user.username !== req.params.username) {
+    const error = new ExpressError('Unathorized', 401)
+    return next(error);
+  } else {
+    return next();
+  }
+}
+
+module.exports = { authenticateJWT, ensureLoggedIn, ensureAdmin, ensureSameUser }
