@@ -10,12 +10,10 @@ const login = async (username, password) => {
     [username]);
   
   let user = result.rows[0]
-  console.log(user)
 
   if (user) {
     if (await bcrypt.compare(password, user.password) === true) {
       let token = jwt.sign({ username, is_admin: user.is_admin }, SECRET_KEY);
-      console.log('TOKEN', token)
       return token
       
     }
