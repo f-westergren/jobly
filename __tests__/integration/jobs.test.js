@@ -102,7 +102,6 @@ describe('POST /jobs', () => {
     const res = await request(app).post('/jobs').send(jobTest)
 
     // Set id and date_posted
-    console.log("BODY", res.body)
     jobTest.id = res.body.job.id
     jobTest.date_posted = res.body.job.date_posted
     expect(res.statusCode).toBe(200)
