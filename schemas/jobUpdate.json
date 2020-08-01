@@ -8,24 +8,18 @@
   "examples": [
       {
           "title": "QA Analyst",
-          "salary": 75000,
+          "salary": 50000,
           "equity": 0.05,
-          "company_handle": "rose_rocket"
+          "company_handle": "test"
       }
-  ],
-  "required": [
-      "title",
-      "salary",
-      "equity",
-      "company_handle"
   ],
   "properties": {
       "title": {
           "$id": "#/properties/title",
           "type": "string",
+          "minLength": 1,
           "title": "The title schema",
           "description": "An explanation about the purpose of this instance.",
-          "minLength": 1,
           "default": "",
           "examples": [
               "QA Analyst"
@@ -33,21 +27,21 @@
       },
       "salary": {
           "$id": "#/properties/salary",
-          "type": "number",
+          "type": "integer",
+          "minLength": 1,
           "title": "The salary schema",
           "description": "An explanation about the purpose of this instance.",
-          "minLength": 1,
           "default": 0,
           "examples": [
-              75000
+              50000
           ]
       },
       "equity": {
           "$id": "#/properties/equity",
           "type": "number",
+          "minLength": 1,
           "title": "The equity schema",
           "description": "An explanation about the purpose of this instance.",
-          "minLength": 1,
           "default": 0.0,
           "examples": [
               0.05
@@ -56,12 +50,12 @@
       "company_handle": {
           "$id": "#/properties/company_handle",
           "type": "string",
+          "minLength": 1,
           "title": "The company_handle schema",
           "description": "An explanation about the purpose of this instance.",
-          "minLength": 1,
           "default": "",
           "examples": [
-              "rose_rocket"
+              "test"
           ]
       }
   },
