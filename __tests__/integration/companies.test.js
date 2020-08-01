@@ -1,6 +1,12 @@
 const request = require('supertest');
 const app = require('../../app');
 const db = require('../../db')
+const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
+const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../../config");
+
+let testAdminToken;
+let testUserToken;
 
 beforeEach(async () => {
   let result = await db.query(
@@ -18,11 +24,27 @@ beforeEach(async () => {
   
   // Testcompany with all details defined.
   testCompany4 = result.rows[2]
+
+  const hashedPassword = await bcrypt.hash("secret", BCRYPT_WORK_FACTOR);
+  await db.query(`
+  INSERT INTO users 
+    (username, password, email, first_name, last_name, is_admin)
+  VALUES 
+    ('AdminUser', $1, 'admin@user.com', 'Admin', 'User', 'true'),
+    ('TestUser', $1, 'test@user.com', 'Test', 'User', 'false')
+  RETURNING *`, [hashedPassword])
+
+  const testAdmin = { username: 'AdminUser', is_admin: true }
+  const testUser =  { username: 'TestUser', is_admin: false }
+
+  testAdminToken = jwt.sign(testAdmin, SECRET_KEY)
+  testUserToken = jwt.sign(testUser, SECRET_KEY)
 })
 
 
 afterEach(async () => {
   await db.query(`DELETE FROM companies`)
+  await db.query(`DELETE FROM users`)
 })
 
 afterAll(async () => {
@@ -31,25 +53,25 @@ afterAll(async () => {
 
 describe('GET /companies', () => {
   test('get a list of all companies, no search parameters', async () => {
-    const res = await request(app).get('/companies')
+    const res = await request(app).get('/companies').send({ _token: testUserToken})
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ companies: [testCompany, testCompany2, testCompany3] })
   })
 
   test('get a list of companies with min_employees and max_employees parameters', async () => {
-    const res = await request(app).get('/companies').send({min_employees: 75, max_employees: 120})
+    const res = await request(app).get('/companies').send({min_employees: 75, max_employees: 120, _token: testUserToken})
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ companies: [testCompany2] })
   })
 
   test('get a list of companies mith search string', async () => {
-    const res = await request(app).get('/companies').send({search: 'Test2'})
+    const res = await request(app).get('/companies').send({search: 'Test2', _token: testUserToken})
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ companies: [testCompany2] })
   })
 
   test('get an empty list of companies mith search string', async () => {
-    const res = await request(app).get('/companies').send({search: 'NoCompany'})
+    const res = await request(app).get('/companies').send({search: 'NoCompany', _token: testUserToken})
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ companies: [] })
   })
@@ -63,18 +85,19 @@ describe('POST /companies', () => {
       num_employees: 123, 
       description: 'Testing the test', 
       logo_url: 'www.testly.com',
+      _token: testAdminToken
     }
     const res = await request(app).post('/companies').send(testly)
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ company: testly })
+    expect(res.body.company).toHaveProperty('handle', 'testlify')
 
     // Make sure company was created
-    const getCompanyRes = await request(app).get(`/companies/${testly.handle}`)
-    expect(getCompanyRes.body.company).toHaveProperty('handle', 'testlify')
+    const getCompanyRes = await request(app).get(`/companies/${testly.handle}`).send({ _token: testAdminToken })
+    expect(getCompanyRes.body.company).toHaveProperty('name', testly.name)
   })
 
   test('returns 400 with invalid input', async () => {
-    const res = await request(app).post('/companies').send({handle: 123, name: 123})
+    const res = await request(app).post('/companies').send({handle: 123, name: 123, _token: testAdminToken})
     expect(res.statusCode).toBe(400)
     expect(res.body).toEqual({
       "message": 
@@ -87,7 +110,7 @@ describe('POST /companies', () => {
   })
 
   test('returns 400 without input', async () => {
-    const res = await request(app).post('/companies')
+    const res = await request(app).post('/companies').send({ _token: testAdminToken })
     expect(res.statusCode).toBe(400)
     expect(res.body).toEqual({
       "message": 
@@ -102,12 +125,12 @@ describe('POST /companies', () => {
 
 describe('GET /companies/:handle', () => {
   test('gets a single company', async () => {
-    const res = await request(app).get(`/companies/${testCompany4.handle}`)
+    const res = await request(app).get(`/companies/${testCompany4.handle}`).send({ _token: testUserToken })
     expect(res.statusCode).toBe(200)
     expect(res.body.company).toHaveProperty('handle', testCompany4.handle)
   })
   test('returns 404 for invalid handle ', async () => {
-    const res = await request(app).get('/companies/invalidHandle')
+    const res = await await request(app).get('/companies/invalidHandle').send({ _token: testUserToken })
     expect(res.statusCode).toBe(404)
     expect(res.body.message).toEqual("Couldn't find company with handle invalidHandle")
   })
@@ -121,21 +144,22 @@ describe('PATCH /companies/:handle', () => {
       name: testCompany.name, 
       num_employees: 500, 
       description: 'Update test', 
-      logo_url: 'www.updatedurl.com'
+      logo_url: 'www.updatedurl.com',
+      _token: testAdminToken
     }
 
     // Send update request
     const res = await request(app).patch(`/companies/${testCompany.handle}`).send(updateData)
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ company: updateData })
+    expect(res.body.company).toHaveProperty('description', updateData.description )
 
     // Check updated company data
-    const getCompanyRes = await request(app).get(`/companies/${testCompany.handle}`)
+    const getCompanyRes = await request(app).get(`/companies/${testCompany.handle}`).send({ _token: testUserToken })
     expect(getCompanyRes.body.company).toHaveProperty('handle', testCompany.handle)
   })
 
   test('returns 404 for invalid handle ', async () => {
-    const res = await request(app).patch('/companies/invalidHandle').send({handle: 'invalidHandle', name: 'Invalid'})
+    const res = await request(app).patch('/companies/invalidHandle').send({handle: 'invalidHandle', name: 'Invalid', _token: testAdminToken})
     expect(res.statusCode).toBe(404)
     expect(res.body.message).toEqual("Couldn't find company with handle invalidHandle")
   })
@@ -143,16 +167,16 @@ describe('PATCH /companies/:handle', () => {
 
 describe('DELETE /companies/:handle', () => {
   test('Deletes a single company', async () => {
-    const res = await request(app).delete(`/companies/${testCompany.handle}`)
+    const res = await await request(app).delete(`/companies/${testCompany.handle}`).send({ _token: testAdminToken })
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ message: 'Company deleted' })
 
     // Make sure company is deleted:
-    const getCompanyRes = await request(app).get(`/companies/${testCompany.handle}`)
+    const getCompanyRes = await request(app).get(`/companies/${testCompany.handle}`).send({ _token: testUserToken })
     expect(getCompanyRes.statusCode).toEqual(404)
   })
   test('responds with 404 for invalid handle', async () => {
-    const res = await request(app).delete('/companies/invalidHandle')
+    const res = await request(app).delete('/companies/invalidHandle').send({ _token: testAdminToken })
     expect(res.statusCode).toBe(404)
   })
 })

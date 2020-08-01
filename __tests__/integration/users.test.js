@@ -1,17 +1,21 @@
 const request = require('supertest');
 const app = require('../../app');
-const db = require('../../db')
+const db = require('../../db');
+const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
+const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../../config");
 
 beforeEach(async () => {
+  const hashedPassword = bcrypt.hash('secret', BCRYPT_WORK_FACTOR)
   let result = await db.query(
     `INSERT INTO users 
       (username, password, first_name, last_name, email, photo_url)
     VALUES 
-      ('TestUser', 'password', 'Test', 'User', 'user@test.com', 'www.test.com')
-    RETURNING *`
-  )
+      ('TestUser', $1, 'Test', 'User', 'user@test.com', 'www.test.com')
+    RETURNING *`, [hashedPassword])
 
   testUser = result.rows[0]
+  testUserToken = jwt.sign({ username: 'TestUser', is_admin: false }, SECRET_KEY)
 })
 
 afterEach(async () => {
@@ -40,13 +44,12 @@ describe('POST /users', () => {
       last_name: 'Last',
       email: 'test@user.com'
     }
+
+    const userTestToken = jwt.sign({ username: 'test', is_admin: false }, SECRET_KEY)
     const res = await request(app).post('/users').send(userTest)
 
     expect(res.statusCode).toBe(200)
-    // Make sure password has been hashed
-    expect(res.body.user.password).not.toEqual('password')
-    expect(res.body.user).toHaveProperty('username', userTest.username)
-    expect(res.body.user).toHaveProperty('email', userTest.email)
+    expect(res.body.token).toEqual(userTestToken)
 
     // Make sure user was created
     const getUserRes = await request(app).get(`/users/${userTest.username}`)
@@ -85,7 +88,8 @@ describe('PATCH /users/:username', () => {
       password: 'password',
       first_name: 'First',
       last_name: 'Updated',
-      email: 'test@user.com'
+      email: 'test@user.com',
+      _token: testUserToken
     }
 
     // Send update request
@@ -108,14 +112,13 @@ describe('PATCH /users/:username', () => {
       email: 'test@user.com'
     })
 
-    expect(res.statusCode).toBe(404)
-    expect(res.body.message).toContain("Couldn't find user with username noUser")
+    expect(res.statusCode).toBe(401)
   })
 })
 
 describe('DELETE /users/:id', () => {
   test('Deletes a single user', async () => {
-    const res = await request(app).delete(`/users/${testUser.username}`)
+    const res = await request(app).delete(`/users/${testUser.username}`).send({ _token: testUserToken })
     expect(res.statusCode).toBe(200)
     expect(res.body).toEqual({ message: 'User deleted' })
 
@@ -124,9 +127,8 @@ describe('DELETE /users/:id', () => {
     expect(getUserRes.statusCode).toEqual(404)
   })
   test('responds with 404 for invalid id', async () => {
-    const res = await request(app).delete('/users/noUser')
-    expect(res.statusCode).toBe(404)
-    expect(res.body.message).toEqual("Couldn't find user with username noUser")
+    const res = await request(app).delete('/users/noUser').send({ _token: testUserToken })
+    expect(res.statusCode).toBe(401)
   })
 })
   
