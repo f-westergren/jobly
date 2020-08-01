@@ -2,7 +2,8 @@ const db = require('../db');
 const ExpressError = require('../helpers/expressError');
 const sqlForPartialUpdate = require('../helpers/partialUpdate')
 const bcrypt = require("bcrypt");
-const { BCRYPT_WORK_FACTOR } = require("../config");
+const jwt = require('jsonwebtoken');
+const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require("../config");
 
 /** Collection of related methods for jobs */
 
@@ -24,9 +25,26 @@ class User {
     return result.rows.map(u => new User(u))
   }
 
-    // Add new user
+  // Authenticate user
+  static async authenticate(username, password) {
+    const result = await db.query(
+      'SELECT password, is_admin FROM users WHERE username = $1',
+      [username]);
+    
+    let user = result.rows[0]
+  
+    if (user) {
+      if (await bcrypt.compare(password, user.password) === true) {
+        let token = jwt.sign({ username, is_admin: user.is_admin }, SECRET_KEY);
+        return token
+      }
+    }
+    throw new ExpressError('Invalid username/password', 400)
+  }
+
+  // Add new user
   static async add(userData) {
-    const { username, password, first_name, last_name, email, photo_url } = userData
+    const { username, password, first_name, last_name, email, photo_url, is_admin } = userData
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR)
     
