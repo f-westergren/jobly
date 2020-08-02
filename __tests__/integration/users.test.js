@@ -84,7 +84,6 @@ describe('PATCH /users/:username', () => {
   test('updates a single username', async () => {
     // Update testUser with this:
     const updateData = {
-      username: testUser.username,
       password: 'password',
       first_name: 'First',
       last_name: 'Updated',

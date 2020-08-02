@@ -63,7 +63,16 @@
           "examples": [
               "test"
           ]
+      },
+      "_token": {
+        "$id": "/properties/token",
+        "type": "string",
+        "title": "The Token Schema ",
+        "default": "",
+        "examples": [
+          "foo123"
+        ]
       }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

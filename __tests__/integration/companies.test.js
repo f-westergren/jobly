@@ -140,13 +140,13 @@ describe('PATCH /companies/:handle', () => {
   test('updates a single company', async () => {
     // Update testCompany data with this:
     const updateData = {
-      handle: testCompany.handle, 
       name: testCompany.name, 
       num_employees: 500, 
       description: 'Update test', 
       logo_url: 'www.updatedurl.com',
       _token: testAdminToken
     }
+
 
     // Send update request
     const res = await request(app).patch(`/companies/${testCompany.handle}`).send(updateData)
@@ -159,7 +159,7 @@ describe('PATCH /companies/:handle', () => {
   })
 
   test('returns 404 for invalid handle ', async () => {
-    const res = await request(app).patch('/companies/invalidHandle').send({handle: 'invalidHandle', name: 'Invalid', _token: testAdminToken})
+    const res = await request(app).patch('/companies/invalidHandle').send({name: 'Invalid', _token: testAdminToken})
     expect(res.statusCode).toBe(404)
     expect(res.body.message).toEqual("Couldn't find company with handle invalidHandle")
   })

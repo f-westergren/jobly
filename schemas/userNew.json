@@ -89,16 +89,15 @@
               "https://www.photo.com"
           ]
       },
-      "is_admin": {
-          "$id": "#/properties/is_admin",
-          "type": "boolean",
-          "title": "The is_admin schema",
-          "description": "An explanation about the purpose of this instance.",
-          "default": false,
-          "examples": [
-              true
-          ]
+      "_token": {
+        "$id": "/properties/token",
+        "type": "string",
+        "title": "The Token Schema ",
+        "default": "",
+        "examples": [
+          "foo123"
+        ]
       }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }
