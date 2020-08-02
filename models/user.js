@@ -44,21 +44,34 @@ class User {
 
   // Add new user
   static async add(userData) {
-    const { username, password, first_name, last_name, email, photo_url, is_admin } = userData
+    const { username, password, first_name, last_name, email, photo_url } = userData
+
+    const duplicateCheck = await db.query(
+      `SELECT username 
+        FROM users 
+        WHERE username = $1`,
+      [username]
+    );
+
+    if (duplicateCheck.rows[0]) {
+      throw new ExpressError(
+        `There already exists a user with username '${username}'`,
+        400
+      );
+    }
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR)
-    
     const result = await db.query(
       `INSERT INTO users (username, password, first_name, last_name, email, photo_url)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING username, first_name, last_name, email, photo_url`, 
       [username, hashedPassword, first_name, last_name, email, photo_url]
     )
+
     if (result.rows.length === 0) {
       throw new ExpressError("Couldn't add user", 400)
     }
     let user = new User(result.rows[0])
-    user.password = hashedPassword
 
     return user
   }
