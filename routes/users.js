@@ -5,7 +5,6 @@ const { validate } = require('jsonschema');
 const userNew = require('../schemas/userNew.json');
 const userUpdate = require('../schemas/userUpdate.json');
 const ExpressError = require("../helpers/expressError");
-const login = require('../models/auth')
 const { ensureSameUser } = require('../middleware/authenticate')
 
 
@@ -30,7 +29,7 @@ router.post('/', async (req, res, next) => {
       return next(error)
     }
     await User.add(req.body)
-    const token = await login(req.body.username, req.body.password)
+    const token = await User.authenticate(req.body.username, req.body.password)
     return res.send({ token: token })
   } catch (error) {
     return next(error)

@@ -90,6 +90,10 @@ class User {
 
   // Update user.
   static async update(username, items) {
+    // If no data is given (exept for token), return 400.
+    if (Object.keys(items).length <= 1) {
+      throw new ExpressError("No data provided to update", 400)
+    }
     const queryObj = sqlForPartialUpdate('users', items, 'username', username)
     const result = await db.query(queryObj.query, queryObj.values)
     if (result.rows.length === 0) {
