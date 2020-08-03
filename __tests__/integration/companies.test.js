@@ -41,7 +41,6 @@ beforeEach(async () => {
   testUserToken = jwt.sign(testUser, SECRET_KEY)
 })
 
-
 afterEach(async () => {
   await db.query(`DELETE FROM companies`)
   await db.query(`DELETE FROM users`)
@@ -147,7 +146,6 @@ describe('PATCH /companies/:handle', () => {
       _token: testAdminToken
     }
 
-
     // Send update request
     const res = await request(app).patch(`/companies/${testCompany.handle}`).send(updateData)
     expect(res.statusCode).toBe(200)
@@ -162,6 +160,11 @@ describe('PATCH /companies/:handle', () => {
     const res = await request(app).patch('/companies/invalidHandle').send({name: 'Invalid', _token: testAdminToken})
     expect(res.statusCode).toBe(404)
     expect(res.body.message).toEqual("Couldn't find company with handle invalidHandle")
+  })
+
+  test('returns 400 with no input', async () => {
+    const res = await request(app).patch(`/companies/${testCompany.handle}`).send({ _token: testAdminToken })
+    expect(res.statusCode).toBe(400)
   })
 })
 

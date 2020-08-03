@@ -55,7 +55,24 @@ describe('POST /users', () => {
     const getUserRes = await request(app).get(`/users/${userTest.username}`)
     expect(getUserRes.body.user).toHaveProperty('username', userTest.username)
   })
-})
+
+  test('retunrs 400 if username already exists', async () => {
+    const userTest = {
+      username: 'TestUser',
+      password: 'password',
+      first_name: 'First',
+      last_name: 'Last',
+      email: 'test@user.com'
+    }
+    const res = await request(app).post('/users').send(userTest)
+
+    expect(res.statusCode).toBe(400)
+
+    // Make sure user was created
+    const getUserRes = await request(app).get(`/users/${userTest.username}`)
+    expect(getUserRes.body.user).toHaveProperty('username', userTest.username)
+  })
+
   test('returns 400 with invalid input', async () => {
     const res = await request(app).post('/users').send({
       username: 123,
@@ -64,6 +81,7 @@ describe('POST /users', () => {
       last_name: 123
     })
   expect(res.statusCode).toBe(400)
+  })
 })
 
 describe('GET /users/:username', () => {
@@ -112,6 +130,11 @@ describe('PATCH /users/:username', () => {
     })
 
     expect(res.statusCode).toBe(401)
+  })
+
+  test('returns 400 with no input', async () => {
+    const res = await request(app).patch(`/users/${testUser.username}`).send({ _token: testUserToken })
+    expect(res.statusCode).toBe(400)
   })
 })
 

@@ -169,6 +169,11 @@ describe('PATCH /jobs/:id', () => {
     expect(res.statusCode).toBe(404)
     expect(res.body.message).toEqual("Couldn't find job with id 0")
   })
+
+  test('returns 400 with no input', async () => {
+    const res = await request(app).patch(`/jobs/${testJob4.id}`).send({ _token: testAdminToken })
+    expect(res.statusCode).toBe(400)
+  })
 })
 
 describe('DELETE /jobs/:id', () => {
