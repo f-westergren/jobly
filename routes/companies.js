@@ -5,7 +5,7 @@ const { validate } = require('jsonschema');
 const companyNew = require('../schemas/companyNew.json');
 const companyUpdate = require('../schemas/companyUpdate.json');
 const { ensureLoggedIn, ensureAdmin } = require('../middleware/authenticate');
-const ExpressError = require('../helpers/ExpressError');
+const ExpressError = require('../helpers/expressError');
 
 /** GET /, returns name and handle for all company objects.
  * The following query strings are accepted:
